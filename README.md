@@ -1,50 +1,90 @@
-# Welcome to your Expo app 👋
+# Turf Arena
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Turf Arena is a premium React Native mobile application for booking and managing sports turfs. It features an ultra-modern dark mode aesthetic ("Midnight Deep"), real-time availability tracking, dynamic slot generation, and a seamless booking experience for both players and turf owners.
 
-## Get started
+## 🚀 Recent Architecture Migration
 
-1. Install dependencies
+Turf Arena recently transitioned from a local-only prototype (using `AsyncStorage` and Firebase Auth) to a robust **Client-Server Architecture**.
 
-   ```bash
-   npm install
-   ```
+### New Tech Stack
+*   **Frontend**: React Native (Expo)
+*   **Backend**: ASP.NET Core 8 Web API
+*   **Database**: SQL Server with Entity Framework Core
+*   **Authentication**: Custom JWT Bearer Tokens (Replaced Firebase)
+*   **Media**: Cloudinary (Image Uploads)
 
-2. Start the app
+---
 
-   ```bash
-   npx expo start
-   ```
+## 📁 Frontend File Structure
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```text
+turf-arena/
+├── app/                      # Expo Router Page Components
+│   ├── index.tsx             # Entry point / Home feed
+│   ├── turf-details.tsx      # Detailed view of a turf
+│   ├── select-slots.tsx      # Slot selection and calendar UI
+│   ├── booking-summary.tsx   # Checkout and payment review
+│   └── (auth)/               # Authentication screens (Login/Register)
+├── components/               # Reusable UI Components
+│   └── ui/
+│       ├── SlotGrid.tsx      # Interactive slot selection grid
+│       └── ...
+├── context/                  # Global State Management
+│   └── AuthContext.tsx       # JWT Auth session manager
+├── services/                 # API Client Layer (Replaced AsyncStorage)
+│   ├── api.ts                # Centralized HTTP client with JWT interceptors
+│   ├── auth.service.ts       # Login, Register, Profile API calls
+│   ├── turf.service.ts       # Turf CRUD API calls
+│   ├── booking.service.ts    # Slot checking and booking API calls
+│   └── review.service.ts     # Ratings and reviews API calls
+├── types/                    # TypeScript Interface Definitions
+│   └── index.ts              # Core Data Models (User, Turf, Booking, Slot)
+├── assets/                   # Static images, fonts, icons
+└── app.json                  # Expo Configuration
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+---
 
-## Learn more
+## 🛠️ Setup & Local Development
 
-To learn more about developing your project with Expo, look at the following resources:
+### 1. Prerequisites
+*   Node.js (v18+)
+*   Expo CLI
+*   The **Turf Arena ASP.NET Core Backend** must be running locally.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### 2. Installation
+Clone the repository and install dependencies:
+```bash
+git clone https://github.com/Hari021101/TurfArena_Front-end.git
+cd turf-arena
+npm install
+```
 
-## Join the community
+### 3. API Configuration
+The frontend communicates with the local ASP.NET Core API. The base URL is configured in `services/api.ts`:
+```typescript
+// For Android Emulator targeting local API:
+export const API_BASE_URL = "https://10.0.2.2:7085/api"; 
+// For iOS Simulator / Web:
+// export const API_BASE_URL = "https://localhost:7085/api";
+```
 
-Join our community of developers creating universal apps.
+### 4. Running the App
+Start the Expo development server:
+```bash
+npm start
+```
+Press `a` to open in Android Emulator, `i` for iOS Simulator, or scan the QR code with the Expo Go app.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+---
+
+## 🗺️ Project Roadmap & Migration Plan
+
+We successfully completed the Phase 1-8 migration plan to connect this frontend to a real database.
+
+- [x] **Phase 1-2**: ASP.NET Core Setup & SQL Server EF Core Data Models.
+- [x] **Phase 3**: Custom JWT Authentication API.
+- [x] **Phase 4-7**: Turf, Slot Generation, Booking, and Review APIs.
+- [x] **Phase 8**: Refactored React Native `services/` to use `fetch` instead of `AsyncStorage`.
+- [ ] **Phase 9**: Database Migrations & End-to-End Testing.
+- [ ] **Phase 10**: Integrate real Payment Gateway (e.g., Razorpay/Stripe).
