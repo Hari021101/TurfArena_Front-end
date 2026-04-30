@@ -1,18 +1,18 @@
 import {
     APP_BORDER_RADIUS,
-    APP_COLORS,
     APP_FONT_SIZES,
     APP_SHADOWS,
     APP_SPACING,
+    getColors,
 } from "@/constants/appTheme";
-import React from "react";
+import { useTheme } from "@/context/ThemeContext";
+import { Ionicons } from "@expo/vector-icons";
 import {
     ActivityIndicator,
     StyleSheet,
     Text,
     TextStyle,
     TouchableOpacity,
-    View,
     ViewStyle,
 } from "react-native";
 
@@ -26,8 +26,10 @@ interface ButtonProps {
   size?: ButtonSize;
   disabled?: boolean;
   loading?: boolean;
-  icon?: React.ReactNode;
+  icon?: keyof typeof Ionicons.glyphMap;
   iconPosition?: "left" | "right";
+  iconColor?: string;
+  iconSize?: number;
   fullWidth?: boolean;
   style?: ViewStyle;
   textStyle?: TextStyle;
@@ -42,10 +44,15 @@ export default function Button({
   loading = false,
   icon,
   iconPosition = "left",
+  iconColor,
+  iconSize = 20,
   fullWidth = false,
   style,
   textStyle,
 }: ButtonProps) {
+  const { isDark } = useTheme();
+  const colors = getColors(isDark);
+
   const getButtonStyle = (): ViewStyle => {
     const baseStyle: ViewStyle = {
       flexDirection: "row",
@@ -55,41 +62,33 @@ export default function Button({
       ...APP_SHADOWS.small,
     };
 
-    // Size styles
     const sizeStyles: Record<ButtonSize, ViewStyle> = {
       small: {
         paddingHorizontal: APP_SPACING.md,
         paddingVertical: APP_SPACING.sm,
-        minHeight: 36,
+        minHeight: 40,
       },
       medium: {
         paddingHorizontal: APP_SPACING.lg,
         paddingVertical: APP_SPACING.md,
-        minHeight: 48,
+        minHeight: 52,
       },
       large: {
         paddingHorizontal: APP_SPACING.xl,
         paddingVertical: APP_SPACING.lg,
-        minHeight: 56,
+        minHeight: 60,
       },
     };
 
-    // Variant styles
     const variantStyles: Record<ButtonVariant, ViewStyle> = {
-      primary: {
-        backgroundColor: APP_COLORS.primary,
-      },
-      secondary: {
-        backgroundColor: APP_COLORS.secondary,
-      },
+      primary: { backgroundColor: colors.primary },
+      secondary: { backgroundColor: colors.secondary },
       outline: {
         backgroundColor: "transparent",
-        borderWidth: 2,
-        borderColor: APP_COLORS.primary,
+        borderWidth: 1.5,
+        borderColor: colors.primary,
       },
-      ghost: {
-        backgroundColor: "transparent",
-      },
+      ghost: { backgroundColor: "transparent" },
     };
 
     if (fullWidth) {
@@ -106,30 +105,16 @@ export default function Button({
 
   const getTextStyle = (): TextStyle => {
     const sizeStyles: Record<ButtonSize, TextStyle> = {
-      small: {
-        fontSize: APP_FONT_SIZES.sm,
-      },
-      medium: {
-        fontSize: APP_FONT_SIZES.md,
-      },
-      large: {
-        fontSize: APP_FONT_SIZES.lg,
-      },
+      small: { fontSize: APP_FONT_SIZES.sm },
+      medium: { fontSize: APP_FONT_SIZES.md },
+      large: { fontSize: APP_FONT_SIZES.lg },
     };
 
     const variantStyles: Record<ButtonVariant, TextStyle> = {
-      primary: {
-        color: APP_COLORS.white,
-      },
-      secondary: {
-        color: APP_COLORS.white,
-      },
-      outline: {
-        color: APP_COLORS.primary,
-      },
-      ghost: {
-        color: APP_COLORS.primary,
-      },
+      primary: { color: colors.white },
+      secondary: { color: colors.white },
+      outline: { color: colors.primary },
+      ghost: { color: colors.primary },
     };
 
     return {
@@ -137,6 +122,27 @@ export default function Button({
       ...sizeStyles[size],
       ...variantStyles[variant],
     };
+  };
+
+  const renderIcon = () => {
+    if (!icon) return null;
+    return (
+      <Ionicons
+        name={icon}
+        size={iconSize}
+        color={
+          iconColor ||
+          (variant === "outline" || variant === "ghost"
+            ? colors.primary
+            : colors.white)
+        }
+        style={
+          iconPosition === "left"
+            ? { marginRight: APP_SPACING.sm }
+            : { marginLeft: APP_SPACING.sm }
+        }
+      />
+    );
   };
 
   return (
@@ -151,25 +157,19 @@ export default function Button({
           size="small"
           color={
             variant === "outline" || variant === "ghost"
-              ? APP_COLORS.primary
-              : APP_COLORS.white
+              ? colors.primary
+              : colors.white
           }
         />
       ) : (
         <>
-          {icon && iconPosition === "left" && (
-            <View style={{ marginRight: APP_SPACING.sm }}>{icon}</View>
-          )}
+          {iconPosition === "left" && renderIcon()}
           <Text style={[getTextStyle(), textStyle]}>{title}</Text>
-          {icon && iconPosition === "right" && (
-            <View style={{ marginLeft: APP_SPACING.sm }}>{icon}</View>
-          )}
+          {iconPosition === "right" && renderIcon()}
         </>
       )}
     </TouchableOpacity>
   );
 }
 
-const styles = StyleSheet.create({
-  // Styles are computed dynamically
-});
+const styles = StyleSheet.create({});

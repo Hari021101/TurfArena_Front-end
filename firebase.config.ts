@@ -1,8 +1,15 @@
-import ReactNativeAsyncStorage from "@react-native-async-storage/async-storage";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { FirebaseApp, initializeApp } from "firebase/app";
-import { Auth, getReactNativePersistence, initializeAuth } from "firebase/auth";
-import { Firestore, getFirestore } from "firebase/firestore";
+import { Auth, getAuth, initializeAuth } from "firebase/auth";
+// @ts-ignore - getReactNativePersistence exists at runtime in firebase v11+
+import { getReactNativePersistence } from "firebase/auth";
+import {
+  Firestore,
+  getFirestore,
+  initializeFirestore,
+} from "firebase/firestore";
 import { FirebaseStorage, getStorage } from "firebase/storage";
+import { Platform } from "react-native";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -18,12 +25,27 @@ const firebaseConfig = {
 // Initialize Firebase
 const app: FirebaseApp = initializeApp(firebaseConfig);
 
-// Initialize Auth with persistence for React Native
-const auth: Auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(ReactNativeAsyncStorage),
-});
+// Initialize Auth with platform-specific persistence
+let auth: Auth;
 
-const db: Firestore = getFirestore(app);
+if (Platform.OS === "web") {
+  auth = getAuth(app);
+} else {
+  auth = initializeAuth(app, {
+    persistence: getReactNativePersistence(AsyncStorage),
+  });
+}
+
+// Initialize Firestore with long-polling and local cache for Web
+let db: Firestore;
+if (Platform.OS === "web") {
+  db = initializeFirestore(app, {
+    experimentalForceLongPolling: true,
+  });
+} else {
+  db = getFirestore(app);
+}
+
 const storage: FirebaseStorage = getStorage(app);
 
 console.log("✅ Firebase initialized successfully");

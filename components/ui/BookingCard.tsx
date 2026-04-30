@@ -5,11 +5,11 @@ import {
     APP_SPACING,
 } from "@/constants/appTheme";
 import { Booking } from "@/types";
-import { formatDateWithLabel } from "@/utils/date";
+import { formatDateWithLabel, formatTime } from "@/utils/date";
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
 import {
     Image,
+    StyleProp,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -21,7 +21,7 @@ import Card from "./Card";
 interface BookingCardProps {
   booking: Booking;
   onPress: () => void;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export default function BookingCard({
@@ -91,7 +91,13 @@ export default function BookingCard({
               color={APP_COLORS.textSecondary}
             />
             <Text style={styles.infoText} numberOfLines={1}>
-              {booking.slots.length} Slots: {booking.slots.join(", ")}
+              {booking.slots.length} Slots:{" "}
+              {booking.slots
+                .map((s) => {
+                  const [start, end] = s.split(" - ");
+                  return `${formatTime(start)} - ${formatTime(end)}`;
+                })
+                .join(", ")}
             </Text>
           </View>
 

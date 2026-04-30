@@ -6,14 +6,12 @@ import {
     APP_FONT_SIZES,
     APP_SPACING,
 } from "@/constants/appTheme";
-import { db } from "@/firebase.config";
-import { cancelBooking } from "@/services/booking.service";
+import { cancelBooking, getBookingById } from "@/services/booking.service";
 import { Booking } from "@/types";
-import { formatDateWithLabel } from "@/utils/date";
+import { formatDateWithLabel, formatTime } from "@/utils/date";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { doc, getDoc } from "firebase/firestore";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
@@ -36,10 +34,9 @@ export default function BookingDetailsScreen() {
     const fetchBookingDetails = async () => {
       if (!id) return;
       try {
-        const docRef = doc(db, "bookings", id);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setBooking({ id: docSnap.id, ...docSnap.data() } as Booking);
+        const bookingData = await getBookingById(id);
+        if (bookingData) {
+          setBooking(bookingData);
         }
       } catch (error) {
         console.error("Error fetching booking details:", error);
@@ -164,7 +161,12 @@ export default function BookingDetailsScreen() {
           <View style={styles.slotsContainer}>
             {booking.slots.map((slot, index) => (
               <View key={index} style={styles.slotBadge}>
-                <Text style={styles.slotText}>{slot}</Text>
+                <Text style={styles.slotText}>
+                  {(() => {
+                    const [start, end] = slot.split(" - ");
+                    return `${formatTime(start)} - ${formatTime(end)}`;
+                  })()}
+                </Text>
               </View>
             ))}
           </View>
@@ -208,6 +210,24 @@ export default function BookingDetailsScreen() {
             style={styles.cancelButton}
             loading={cancelling}
             disabled={cancelling}
+          />
+        )}
+
+        {booking.status === "completed" && (
+          <Button
+            title="Rate Your Experience"
+            variant="primary"
+            onPress={() =>
+              router.push({
+                pathname: "/add-review",
+                params: {
+                  id: booking.id,
+                  turfId: booking.turfId,
+                  turfName: booking.turfName,
+                },
+              })
+            }
+            style={styles.rateButton}
           />
         )}
       </ScrollView>
@@ -393,6 +413,9 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     borderColor: APP_COLORS.error,
+    marginTop: APP_SPACING.md,
+  },
+  rateButton: {
     marginTop: APP_SPACING.md,
   },
 });

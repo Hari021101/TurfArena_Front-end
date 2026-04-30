@@ -1,12 +1,14 @@
 import {
     APP_BORDER_RADIUS,
-    APP_COLORS,
     APP_SHADOWS,
     APP_SPACING,
+    getColors,
 } from "@/constants/appTheme";
+import { useTheme } from "@/context/ThemeContext";
 import React from "react";
 import {
     GestureResponderEvent,
+    StyleProp,
     StyleSheet,
     TouchableOpacity,
     View,
@@ -19,7 +21,7 @@ interface CardProps {
   children: React.ReactNode;
   variant?: CardVariant;
   onPress?: (event: GestureResponderEvent) => void;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   padding?: number;
   noPadding?: boolean;
 }
@@ -32,9 +34,12 @@ export default function Card({
   padding,
   noPadding = false,
 }: CardProps) {
+  const { isDark } = useTheme();
+  const colors = getColors(isDark);
+
   const getCardStyle = (): ViewStyle => {
     const baseStyle: ViewStyle = {
-      backgroundColor: APP_COLORS.card,
+      backgroundColor: colors.card,
       borderRadius: APP_BORDER_RADIUS.lg,
       padding: noPadding ? 0 : (padding ?? APP_SPACING.md),
     };
@@ -50,7 +55,7 @@ export default function Card({
       outlined: {
         ...baseStyle,
         borderWidth: 1,
-        borderColor: APP_COLORS.border,
+        borderColor: colors.border,
       },
     };
 

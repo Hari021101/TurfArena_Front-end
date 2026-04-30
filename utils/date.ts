@@ -47,7 +47,22 @@ export const formatTime = (time: string): string => {
   const period = hours >= 12 ? "PM" : "AM";
   const hour12 = hours % 12 || 12;
 
+  if (minutes === 0) {
+    return `${hour12} ${period}`;
+  }
   return `${hour12}:${minutes.toString().padStart(2, "0")} ${period}`;
+};
+
+/**
+ * Format turf timing object to 12-hour range string
+ * @param timing - Object with start and end times
+ * @returns string (e.g., "6 AM to 11 PM")
+ */
+export const formatTurfTiming = (timing: {
+  start: string;
+  end: string;
+}): string => {
+  return `${formatTime(timing.start)} to ${formatTime(timing.end)}`;
 };
 
 /**
@@ -74,15 +89,31 @@ export const generateTimeSlots = (
 ): string[] => {
   const slots: string[] = [];
 
-  for (let hour = startHour; hour < endHour; hour++) {
+  // Normalize endHour if it's earlier than startHour (indicates next day)
+  // Also handle 00:00 as 24:00
+  let normalizedEndHour = endHour;
+  if (endHour <= startHour) {
+    normalizedEndHour = endHour + 24;
+  }
+
+  for (let hour = startHour; hour < normalizedEndHour; hour++) {
     for (let minute = 0; minute < 60; minute += intervalMinutes) {
-      const startTime = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
-      const endMinute = minute + intervalMinutes;
-      const endHourCalc = endMinute >= 60 ? hour + 1 : hour;
-      const endMinuteCalc = endMinute >= 60 ? 0 : endMinute;
+      const currentHour = hour % 24;
+      const startTime = `${currentHour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+
+      const totalMinutes = hour * 60 + minute + intervalMinutes;
+      const endHourCalc = Math.floor(totalMinutes / 60) % 24;
+      const endMinuteCalc = totalMinutes % 60;
+
       const endTime = `${endHourCalc.toString().padStart(2, "0")}:${endMinuteCalc.toString().padStart(2, "0")}`;
 
-      slots.push(`${startTime} - ${endTime}`);
+      // Prevent adding a slot that starts exactly at the closing time if closing is exactly on the hour
+      if (
+        hour < normalizedEndHour ||
+        (hour === normalizedEndHour && minute === 0)
+      ) {
+        slots.push(`${startTime} - ${endTime}`);
+      }
     }
   }
 

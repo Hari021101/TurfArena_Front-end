@@ -7,14 +7,13 @@ import {
     APP_SPACING,
 } from "@/constants/appTheme";
 import { useAuth } from "@/context/AuthContext";
-import { storage } from "@/firebase.config";
 import { updateUserProfile } from "@/services/auth.service";
+import { uploadToCloudinary } from "@/services/cloudinary.service";
 import { getNameError } from "@/utils/validation";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
-import React, { useState } from "react";
+import { useState } from "react";
 import {
     Alert,
     Image,
@@ -53,13 +52,15 @@ export default function CompleteProfileScreen() {
     if (!firebaseUser) return null;
 
     try {
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      const storageRef = ref(storage, `users/${firebaseUser.uid}/profile.jpg`);
-      await uploadBytes(storageRef, blob);
-      return await getDownloadURL(storageRef);
-    } catch (e) {
+      const profileUrl = await uploadToCloudinary(uri);
+      if (!profileUrl) throw new Error("Cloudinary upload returned no URL");
+      return profileUrl;
+    } catch (e: any) {
       console.error("Image upload failed", e);
+      Alert.alert(
+        "Upload Failed",
+        "Profile photo couldn't be uploaded. Your profile will be created without a photo for now. Please check your Cloudinary configuration.",
+      );
       return null;
     }
   };
@@ -80,11 +81,16 @@ export default function CompleteProfileScreen() {
         profileUrl = await uploadImage(image);
       }
 
-      await updateUserProfile(firebaseUser.uid, {
+      const updateData: any = {
         name,
         role,
-        profilePicture: profileUrl || undefined,
-      });
+      };
+
+      if (profileUrl) {
+        updateData.profilePicture = profileUrl;
+      }
+
+      await updateUserProfile(firebaseUser.uid, updateData);
 
       if (user) {
         setUser({
@@ -95,7 +101,11 @@ export default function CompleteProfileScreen() {
         });
       }
 
-      router.replace("/(tabs)");
+      if (role === "owner") {
+        router.replace("/(owner)" as any);
+      } else {
+        router.replace("/(tabs)" as any);
+      }
     } catch (error: any) {
       Alert.alert("Error", error.message || "Failed to update profile");
     } finally {

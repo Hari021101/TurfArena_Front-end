@@ -10,6 +10,7 @@ export interface User {
   role: UserRole;
   profilePicture?: string;
   favoriteTurfs?: string[];
+  pushToken?: string;
   createdAt: Date;
 }
 
@@ -39,6 +40,8 @@ export interface Turf {
   rating?: number;
   reviewCount?: number;
   isActive: boolean;
+  stateId?: string;
+  regionId?: string;
   createdAt: Date;
   updatedAt?: Date;
 }
@@ -51,9 +54,14 @@ export interface Slot {
   date: string; // YYYY-MM-DD format
   time: string; // "HH:mm - HH:mm" format (e.g., "06:00 - 07:00")
   status: SlotStatus;
+  price?: number;
 }
 
-export type BookingStatus = "confirmed" | "completed" | "cancelled";
+export type BookingStatus =
+  | "confirmed"
+  | "completed"
+  | "cancelled"
+  | "pending_payment";
 export type PaymentStatus = "pending" | "completed" | "failed" | "refunded";
 
 export interface Booking {
@@ -67,6 +75,9 @@ export interface Booking {
   totalAmount: number;
   paymentStatus: PaymentStatus;
   status: BookingStatus;
+  razorpay_order_id?: string;
+  razorpay_payment_id?: string;
+  razorpay_signature?: string;
   createdAt: Date;
   updatedAt?: Date;
   cancelledAt?: Date;

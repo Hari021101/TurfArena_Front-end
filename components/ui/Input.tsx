@@ -1,20 +1,21 @@
 import {
-    APP_BORDER_RADIUS,
-    APP_COLORS,
-    APP_FONT_SIZES,
-    APP_SPACING,
+  APP_BORDER_RADIUS,
+  APP_FONT_SIZES,
+  APP_SPACING,
+  getColors,
 } from "@/constants/appTheme";
+import { useTheme } from "@/context/ThemeContext";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import { useState } from "react";
 import {
-    StyleSheet,
-    Text,
-    TextInput,
-    TextInputProps,
-    TextStyle,
-    TouchableOpacity,
-    View,
-    ViewStyle,
+  StyleSheet,
+  Text,
+  TextInput,
+  TextInputProps,
+  TextStyle,
+  TouchableOpacity,
+  View,
+  ViewStyle,
 } from "react-native";
 
 interface InputProps extends TextInputProps {
@@ -39,6 +40,9 @@ export default function Input({
 }: InputProps) {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const { isDark } = useTheme();
+  const colors = getColors(isDark);
+  const styles = createStyles(colors);
 
   const getKeyboardType = () => {
     switch (type) {
@@ -81,10 +85,10 @@ export default function Input({
             size={20}
             color={
               error
-                ? APP_COLORS.error
+                ? colors.error
                 : isFocused
-                  ? APP_COLORS.primary
-                  : APP_COLORS.textSecondary
+                  ? colors.primary
+                  : colors.textSecondary
             }
             style={styles.iconLeft}
           />
@@ -92,7 +96,7 @@ export default function Input({
 
         <TextInput
           style={[styles.input, inputStyle]}
-          placeholderTextColor={APP_COLORS.textSecondary}
+          placeholderTextColor={colors.textSecondary}
           keyboardType={getKeyboardType()}
           autoComplete={getAutoCompleteType()}
           secureTextEntry={type === "password" && !isPasswordVisible}
@@ -109,7 +113,7 @@ export default function Input({
             <Ionicons
               name={isPasswordVisible ? "eye-off-outline" : "eye-outline"}
               size={20}
-              color={APP_COLORS.textSecondary}
+              color={colors.textSecondary}
             />
           </TouchableOpacity>
         )}
@@ -120,63 +124,64 @@ export default function Input({
             size={20}
             color={
               error
-                ? APP_COLORS.error
+                ? colors.error
                 : isFocused
-                  ? APP_COLORS.primary
-                  : APP_COLORS.textSecondary
+                  ? colors.primary
+                  : colors.textSecondary
             }
             style={styles.iconRight}
           />
         )}
       </View>
 
-      {error && <Text style={styles.error}>{error}</Text>}
+      {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: APP_SPACING.md,
-  },
-  label: {
-    fontSize: APP_FONT_SIZES.sm,
-    fontWeight: "600",
-    color: APP_COLORS.text,
-    marginBottom: APP_SPACING.xs,
-  },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: APP_COLORS.card,
-    borderRadius: APP_BORDER_RADIUS.md,
-    borderWidth: 1,
-    borderColor: APP_COLORS.border,
-    paddingHorizontal: APP_SPACING.md,
-    minHeight: 48,
-  },
-  inputContainerFocused: {
-    borderColor: APP_COLORS.primary,
-    borderWidth: 2,
-  },
-  inputContainerError: {
-    borderColor: APP_COLORS.error,
-  },
-  input: {
-    flex: 1,
-    fontSize: APP_FONT_SIZES.md,
-    color: APP_COLORS.text,
-    paddingVertical: APP_SPACING.sm,
-  },
-  iconLeft: {
-    marginRight: APP_SPACING.sm,
-  },
-  iconRight: {
-    marginLeft: APP_SPACING.sm,
-  },
-  error: {
-    fontSize: APP_FONT_SIZES.xs,
-    color: APP_COLORS.error,
-    marginTop: APP_SPACING.xs,
-  },
-});
+const createStyles = (colors: any) =>
+  StyleSheet.create({
+    container: {
+      marginBottom: APP_SPACING.md,
+    },
+    label: {
+      fontSize: APP_FONT_SIZES.sm,
+      fontWeight: "600",
+      color: colors.text,
+      marginBottom: APP_SPACING.xs,
+    },
+    inputContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.card,
+      borderRadius: APP_BORDER_RADIUS.md,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      paddingHorizontal: APP_SPACING.md,
+      minHeight: 52, // Match Button medium height
+    },
+    inputContainerFocused: {
+      borderColor: colors.primary,
+      borderWidth: 2,
+    },
+    inputContainerError: {
+      borderColor: colors.error,
+    },
+    input: {
+      flex: 1,
+      fontSize: APP_FONT_SIZES.md,
+      color: colors.text,
+      paddingVertical: APP_SPACING.sm,
+    },
+    iconLeft: {
+      marginRight: APP_SPACING.sm,
+    },
+    iconRight: {
+      marginLeft: APP_SPACING.sm,
+    },
+    error: {
+      fontSize: APP_FONT_SIZES.xs,
+      color: colors.error,
+      marginTop: APP_SPACING.xs,
+    },
+  });
