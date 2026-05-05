@@ -1,4 +1,6 @@
+import { auth } from "@/firebase.config";
 import { User } from "@/types";
+import { GoogleAuthProvider, signInWithCredential, UserCredential } from "firebase/auth";
 import { apiFetch, getAuthToken, removeAuthToken, setAuthToken } from "./api";
 
 /**
@@ -99,4 +101,45 @@ export const logout = async (): Promise<void> => {
 export const isAuthenticated = async (): Promise<boolean> => {
   const token = await getAuthToken();
   return !!token;
+};
+
+/**
+ * Sign in with Google using an ID Token from expo-auth-session
+ * @param idToken - The Google ID token obtained from expo-auth-session
+ * @returns Firebase UserCredential user object
+ */
+export const signInWithGoogle = async (idToken: string): Promise<any> => {
+  try {
+    const credential = GoogleAuthProvider.credential(idToken);
+    const userCredential: UserCredential = await signInWithCredential(auth, credential);
+    const firebaseToken = await userCredential.user.getIdToken();
+    await setAuthToken(firebaseToken);
+    return userCredential.user;
+  } catch (error) {
+    console.error("❌ Error signing in with Google:", error);
+    throw error;
+  }
+};
+
+/**
+ * Create a new user profile in the backend after first-time Google login
+ * @param uid - Firebase user UID
+ * @param profileData - Initial profile data (name, email, role, etc.)
+ * @returns Promise<User> - Newly created user profile
+ */
+export const createUserProfile = async (
+  uid: string,
+  profileData: Partial<User>,
+): Promise<User> => {
+  try {
+    const response = await apiFetch("/auth/register", {
+      method: "POST",
+      body: JSON.stringify({ uid, ...profileData }),
+    });
+    if (response.token) await setAuthToken(response.token);
+    return response.user ?? response;
+  } catch (error) {
+    console.error("❌ Error creating user profile:", error);
+    throw error;
+  }
 };

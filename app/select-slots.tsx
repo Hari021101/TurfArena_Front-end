@@ -10,6 +10,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { getSlotsByDate } from "@/services/booking.service";
 import { getTurfById } from "@/services/turf.service";
+import { getTurfWeather, WeatherData } from "@/services/weather.service";
+import WeatherCard from "@/components/ui/WeatherCard";
 import { Turf } from "@/types";
 import {
     formatDateWithLabel,
@@ -45,6 +47,7 @@ export default function SelectSlotsScreen() {
   const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState(false);
+  const [weather, setWeather] = useState<WeatherData | null>(null);
 
   const dates = getNextDays(14);
 
@@ -59,6 +62,9 @@ export default function SelectSlotsScreen() {
         setBookedSlots(
           slots.filter((s) => s.status === "booked").map((s) => s.time),
         );
+
+        const weatherData = await getTurfWeather(turfId);
+        setWeather(weatherData);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -203,6 +209,15 @@ export default function SelectSlotsScreen() {
             );
           })}
         </ScrollView>
+
+        {weather && (
+          <View style={{ marginTop: APP_SPACING.lg }}>
+            <WeatherCard 
+              weather={weather} 
+              isOutdoor={turf.amenities?.some(a => a.toLowerCase().includes('outdoor')) ?? false} 
+            />
+          </View>
+        )}
 
         {allSlots.length === 0 && (
           <View style={styles.emptySlotsContainer}>

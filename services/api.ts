@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Using 10.0.2.2 for Android Emulator to access localhost, use localhost for iOS/Web.
 // Adjust this to your machine's IP address if testing on a physical device.
-export const API_BASE_URL = "https://localhost:7085/api"; // Default ASP.NET Core HTTPS port
+export const API_BASE_URL = "https://localhost:7155/api"; // ASP.NET Core HTTPS port
 
 export const getAuthToken = async () => {
   return await AsyncStorage.getItem("jwt_token");

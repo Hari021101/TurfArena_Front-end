@@ -1,7 +1,6 @@
 import { APP_COLORS } from "@/constants/appTheme";
 import { useAuth } from "@/context/AuthContext";
 import {
-    createUserProfile,
     getUserProfile,
     signInWithGoogle,
 } from "@/services/auth.service";
@@ -29,7 +28,7 @@ const { width, height } = Dimensions.get("window");
 WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
-  const { bypassLogin, isFirestoreBlocked } = useAuth();
+  const { bypassLogin, isFirestoreBlocked, setUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [selectedRole, setSelectedRole] = useState<"player" | "owner">(
     "player",
@@ -52,40 +51,47 @@ export default function LoginScreen() {
   const handleGoogleLogin = async (idToken: string) => {
     setLoading(true);
     try {
+      // Step 1: Sign into Firebase with the Google ID token
       const firebaseUser = await signInWithGoogle(idToken);
-      const userProfile = await getUserProfile(firebaseUser.uid);
 
-      if (!userProfile) {
-        await createUserProfile(firebaseUser.uid, {
-          name: firebaseUser.displayName || "",
-          email: firebaseUser.email || "",
-          profilePicture: firebaseUser.photoURL || undefined,
-          role: selectedRole,
-        });
+      // Step 2: Try to get the user profile from the backend
+      // (This may fail with 401 if the backend doesn't validate Firebase JWTs)
+      let role: "player" | "owner" = selectedRole;
+      let userProfile = null;
 
-        if (selectedRole === "owner") {
-          router.replace("/(owner)");
-        } else {
-          router.replace("/(tabs)");
-        }
+      try {
+        userProfile = await getUserProfile(firebaseUser.uid);
+        if (userProfile?.role) role = userProfile.role;
+      } catch (_) {
+        // Backend doesn't recognize Firebase token — continue with local profile
+      }
+
+      // Step 3: Build a local user object from Firebase data
+      const localUser = userProfile ?? {
+        id: firebaseUser.uid,
+        name: firebaseUser.displayName || "User",
+        email: firebaseUser.email || "",
+        profilePicture: firebaseUser.photoURL || undefined,
+        role,
+        createdAt: new Date(),
+        favoriteTurfs: [],
+      };
+
+      // Step 4: Set user in auth context
+      setUser(localUser as any);
+
+      // Step 5: Navigate based on role
+      if (role === "owner") {
+        router.replace("/(owner)");
       } else {
-        if (userProfile.role === "owner") {
-          router.replace("/(owner)");
-        } else {
-          router.replace("/(tabs)");
-        }
+        router.replace("/(tabs)");
       }
     } catch (error: any) {
       console.error("Google Login Error:", error);
-      const errorMsg = error?.message?.toLowerCase() || "";
-      if (errorMsg.includes("offline") || errorMsg.includes("client")) {
-        router.replace("/(tabs)");
-      } else {
-        Alert.alert(
-          "Error",
-          "Failed to sign in with Google. Please try again.",
-        );
-      }
+      Alert.alert(
+        "Login Failed",
+        "Unable to sign in with Google. Please try again.",
+      );
     } finally {
       setLoading(false);
     }
