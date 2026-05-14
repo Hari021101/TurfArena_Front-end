@@ -1,7 +1,7 @@
 import { APP_COLORS, APP_FONT_SIZES, APP_SPACING } from "@/constants/appTheme";
 import { Review } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
 
 interface ReviewCardProps {
   review: Review;
@@ -44,6 +44,23 @@ export default function ReviewCard({ review }: ReviewCardProps) {
         </View>
       </View>
       <Text style={styles.comment}>{review.comment}</Text>
+
+      {/* Display Photos if any */}
+      {review.photos && review.photos.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.photosScroll}
+        >
+          {review.photos.map((photoUri, index) => (
+            <Image
+              key={index}
+              source={{ uri: photoUri }}
+              style={styles.reviewPhoto}
+            />
+          ))}
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -100,5 +117,16 @@ const styles = StyleSheet.create({
     fontSize: APP_FONT_SIZES.sm,
     color: APP_COLORS.textSecondary,
     lineHeight: 20,
+  },
+  photosScroll: {
+    marginTop: APP_SPACING.md,
+    flexDirection: "row",
+  },
+  reviewPhoto: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    marginRight: APP_SPACING.sm,
+    backgroundColor: APP_COLORS.background,
   },
 });

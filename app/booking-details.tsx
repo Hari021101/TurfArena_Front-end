@@ -34,14 +34,27 @@ export default function BookingDetailsScreen() {
     const fetchBookingDetails = async () => {
       if (!id) return;
       try {
-        const bookingData = await getBookingById(id);
-        if (bookingData) {
-          setBooking(bookingData);
-        }
+        // Mock dummy data for demo based on ID
+        const dummyBooking: Booking = {
+          id: id as string,
+          userId: "demo-player-123",
+          turfId: "turf-1",
+          turfName: id === "bk-102" ? "Urban Kick Turf" : "Greenfield Arena",
+          turfPhoto: id === "bk-102" 
+            ? "https://images.unsplash.com/photo-1459865264687-595d652de67e?q=80&w=1000"
+            : "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?q=80&w=1000",
+          date: new Date().toISOString().split("T")[0],
+          slots: id === "bk-102" ? ["07:00 - 08:00"] : ["18:00 - 19:00", "19:00 - 20:00"],
+          totalAmount: id === "bk-102" ? 1000 : 2400,
+          paymentStatus: "completed",
+          status: id === "bk-102" ? "completed" : "confirmed",
+          createdAt: new Date(),
+        };
+        setTimeout(() => setBooking(dummyBooking), 500);
       } catch (error) {
         console.error("Error fetching booking details:", error);
       } finally {
-        setLoading(false);
+        setTimeout(() => setLoading(false), 500);
       }
     };
 

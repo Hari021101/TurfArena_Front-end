@@ -5,11 +5,21 @@ import {
     APP_SPACING,
     getColors,
 } from "@/constants/appTheme";
+import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { Turf } from "@/types";
 import { formatTurfTiming } from "@/utils/date";
 import { Ionicons } from "@expo/vector-icons";
-import { Image, StyleSheet, Text, View, ViewStyle } from "react-native";
+import { useRef } from "react";
+import {
+    Animated,
+    Image,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+    ViewStyle,
+} from "react-native";
 import Card from "./Card";
 
 interface TurfCardProps {
@@ -22,6 +32,19 @@ export default function TurfCard({ turf, onPress, style }: TurfCardProps) {
   const { isDark } = useTheme();
   const colors = getColors(isDark);
   const styles = createStyles(colors);
+  const { isFavourite, toggleFavourite } = useAuth();
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const favourite = isFavourite(turf.id);
+
+  const handleFavouritePress = () => {
+    // Pulse animation
+    Animated.sequence([
+      Animated.spring(scaleAnim, { toValue: 1.35, useNativeDriver: true }),
+      Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true }),
+    ]).start();
+    toggleFavourite(turf.id);
+  };
 
   return (
     <Card
@@ -30,14 +53,31 @@ export default function TurfCard({ turf, onPress, style }: TurfCardProps) {
       noPadding
       style={[styles.container, style] as any}
     >
-      <Image
-        source={{
-          uri:
-            turf.photos[0] ||
-            "https://via.placeholder.com/300x150?text=No+Image",
-        }}
-        style={styles.image}
-      />
+      <View style={styles.imageWrapper}>
+        <Image
+          source={{
+            uri:
+              turf.photos[0] ||
+              "https://via.placeholder.com/300x150?text=No+Image",
+          }}
+          style={styles.image}
+        />
+        {/* ❤️ Favourite Button */}
+        <TouchableOpacity
+          style={styles.heartButton}
+          onPress={handleFavouritePress}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+            <Ionicons
+              name={favourite ? "heart" : "heart-outline"}
+              size={22}
+              color={favourite ? "#F43F5E" : "rgba(255,255,255,0.9)"}
+            />
+          </Animated.View>
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.content}>
         <View style={styles.header}>
           <Text style={styles.name} numberOfLines={1}>
@@ -88,10 +128,24 @@ const createStyles = (colors: any) =>
       overflow: "hidden",
       backgroundColor: colors.card,
     },
+    imageWrapper: {
+      position: "relative",
+    },
     image: {
       width: "100%",
       height: 180,
       backgroundColor: colors.cardLight,
+    },
+    heartButton: {
+      position: "absolute",
+      top: 10,
+      right: 10,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: "rgba(0,0,0,0.35)",
+      justifyContent: "center",
+      alignItems: "center",
     },
     content: {
       padding: APP_SPACING.md,
@@ -183,3 +237,4 @@ const createStyles = (colors: any) =>
       marginLeft: 4,
     },
   });
+

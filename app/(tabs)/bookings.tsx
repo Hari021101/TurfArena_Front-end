@@ -17,27 +17,57 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function BookingsScreen() {
-  const { firebaseUser } = useAuth();
+  const { user } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchBookings = async () => {
-    if (!firebaseUser) return;
+    if (!user) return;
     try {
-      const data = await getUserBookings(firebaseUser.uid);
-      setBookings(data);
+      // Mock dummy data for demo
+      const dummyBookings: Booking[] = [
+        {
+          id: "bk-101",
+          userId: user.id,
+          turfId: "turf-1",
+          turfName: "Greenfield Arena",
+          turfPhoto: "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?q=80&w=1000",
+          date: new Date().toISOString().split("T")[0],
+          slots: ["18:00 - 19:00", "19:00 - 20:00"],
+          totalAmount: 2400,
+          paymentStatus: "completed",
+          status: "confirmed",
+          createdAt: new Date(),
+        },
+        {
+          id: "bk-102",
+          userId: user.id,
+          turfId: "turf-2",
+          turfName: "Urban Kick Turf",
+          turfPhoto: "https://images.unsplash.com/photo-1459865264687-595d652de67e?q=80&w=1000",
+          date: new Date(Date.now() - 86400000 * 2).toISOString().split("T")[0], // 2 days ago
+          slots: ["07:00 - 08:00"],
+          totalAmount: 1000,
+          paymentStatus: "completed",
+          status: "completed",
+          createdAt: new Date(Date.now() - 86400000 * 5),
+        }
+      ];
+      setTimeout(() => setBookings(dummyBookings), 800); // Simulate network delay
     } catch (error) {
       console.error("Error fetching bookings:", error);
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      setTimeout(() => {
+        setLoading(false);
+        setRefreshing(false);
+      }, 800);
     }
   };
 
   useEffect(() => {
     fetchBookings();
-  }, [firebaseUser]);
+  }, [user]);
 
   const onRefresh = () => {
     setRefreshing(true);

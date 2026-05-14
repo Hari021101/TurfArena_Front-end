@@ -58,10 +58,15 @@ export default function SelectSlotsScreen() {
         const turfData = await getTurfById(turfId);
         setTurf(turfData);
 
-        const slots = await getSlotsByDate(turfId, toDateString(selectedDate));
-        setBookedSlots(
-          slots.filter((s) => s.status === "booked").map((s) => s.time),
-        );
+        try {
+          const slots = await getSlotsByDate(turfId, toDateString(selectedDate));
+          setBookedSlots(
+            slots.filter((s) => s.status === "booked").map((s) => s.time),
+          );
+        } catch (e) {
+          // Fallback dummy booked slots for demo
+          setBookedSlots(["18:00 - 19:00", "07:00 - 08:00"]);
+        }
 
         const weatherData = await getTurfWeather(turfId);
         setWeather(weatherData);

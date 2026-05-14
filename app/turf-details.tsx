@@ -1,5 +1,6 @@
 import Button from "@/components/ui/Button";
 import ReviewCard from "@/components/ui/ReviewCard";
+import WeatherCard from "@/components/ui/WeatherCard";
 import {
   APP_BORDER_RADIUS,
   APP_FONT_SIZES,
@@ -10,13 +11,15 @@ import {
 import { useTheme } from "@/context/ThemeContext";
 import { getTurfReviews } from "@/services/review.service";
 import { getTurfById } from "@/services/turf.service";
+import { getTurfWeather } from "@/services/weather.service";
 import { Review, Turf } from "@/types";
 import { formatTurfTiming } from "@/utils/date";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
   Image,
   ScrollView,
   StyleSheet,
@@ -25,26 +28,40 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAuth } from "@/context/AuthContext";
 
 export default function TurfDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [turf, setTurf] = useState<Turf | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
+  const [weather, setWeather] = useState<any>(null);
   const { isDark } = useTheme();
   const colors = getColors(isDark);
   const styles = createStyles(colors);
+  const { isFavourite, toggleFavourite } = useAuth();
+  const heartScale = useRef(new Animated.Value(1)).current;
+
+  const handleFavouritePress = () => {
+    Animated.sequence([
+      Animated.spring(heartScale, { toValue: 1.4, useNativeDriver: true }),
+      Animated.spring(heartScale, { toValue: 1, useNativeDriver: true }),
+    ]).start();
+    if (turf) toggleFavourite(turf.id);
+  };
 
   useEffect(() => {
     const fetchTurfData = async () => {
       if (!id) return;
       try {
-        const [turfData, reviewData] = await Promise.all([
+        const [turfData, reviewData, weatherData] = await Promise.all([
           getTurfById(id),
           getTurfReviews(id),
+          getTurfWeather(id),
         ]);
         setTurf(turfData);
         setReviews(reviewData);
+        setWeather(weatherData);
       } catch (error) {
         console.error("Error fetching turf data:", error);
       } finally {
@@ -83,6 +100,19 @@ export default function TurfDetailsScreen() {
             onPress={() => router.back()}
           >
             <Ionicons name="arrow-back" size={24} color={colors.white} />
+          </TouchableOpacity>
+          {/* ❤️ Favourite Button */}
+          <TouchableOpacity
+            style={styles.heartButtonDetail}
+            onPress={handleFavouritePress}
+          >
+            <Animated.View style={{ transform: [{ scale: heartScale }] }}>
+              <Ionicons
+                name={turf && isFavourite(turf.id) ? "heart" : "heart-outline"}
+                size={24}
+                color={turf && isFavourite(turf.id) ? "#F43F5E" : "rgba(255,255,255,0.9)"}
+              />
+            </Animated.View>
           </TouchableOpacity>
         </View>
 
@@ -134,6 +164,7 @@ export default function TurfDetailsScreen() {
           <Text style={styles.sectionTitle}>Description</Text>
           <Text style={styles.descriptionText}>{turf.description}</Text>
 
+          <Text style={styles.sectionTitle}>Amenities</Text>
           <View style={styles.amenitiesContainer}>
             {turf.amenities.map((amenity, index) => (
               <View key={index} style={styles.amenityBadge}>
@@ -141,6 +172,22 @@ export default function TurfDetailsScreen() {
               </View>
             ))}
           </View>
+
+          {/* 🌤️ Weather Widget */}
+          {weather && (
+            <>
+              <Text style={styles.sectionTitle}>Today's Weather</Text>
+              <WeatherCard
+                weather={weather}
+                isOutdoor={
+                  !turf.amenities.some((a) =>
+                    a.toLowerCase().includes("indoor") ||
+                    a.toLowerCase().includes("ac hall")
+                  )
+                }
+              />
+            </>
+          )}
 
           <Text style={styles.sectionTitle}>Reviews ({reviews.length})</Text>
           {reviews.length > 0 ? (
@@ -221,6 +268,18 @@ const createStyles = (colors: any) =>
       position: "absolute",
       top: 50,
       left: 20,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: "rgba(0,0,0,0.4)",
+      justifyContent: "center",
+      alignItems: "center",
+      ...APP_SHADOWS.small,
+    },
+    heartButtonDetail: {
+      position: "absolute",
+      top: 50,
+      right: 20,
       width: 44,
       height: 44,
       borderRadius: 22,

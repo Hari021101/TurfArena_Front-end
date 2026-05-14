@@ -5,7 +5,9 @@ import { useAuth } from "@/context/AuthContext";
 import { addReview } from "@/services/review.service";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
+import { uploadToCloudinary } from "@/services/cloudinary.service";
 import {
     Alert,
     KeyboardAvoidingView,
@@ -32,7 +34,30 @@ export default function AddReviewScreen() {
 
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
+  const [photos, setPhotos] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState("");
+
+  const pickImage = async () => {
+    if (photos.length >= 3) {
+      Alert.alert("Limit Reached", "You can only attach up to 3 photos.");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.7,
+    });
+
+    if (!result.canceled && result.assets[0].uri) {
+      setPhotos((prev) => [...prev, result.assets[0].uri]);
+    }
+  };
+
+  const removePhoto = (index: number) => {
+    setPhotos((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const handleSubmit = async () => {
     if (rating === 0) {
@@ -44,6 +69,19 @@ export default function AddReviewScreen() {
 
     setLoading(true);
     try {
+      // 1. Upload photos if any
+      const uploadedUrls: string[] = [];
+      if (photos.length > 0) {
+        setUploadProgress("Uploading photos...");
+        for (let i = 0; i < photos.length; i++) {
+          const url = await uploadToCloudinary(photos[i]);
+          if (url) uploadedUrls.push(url);
+        }
+      }
+
+      setUploadProgress("Submitting review...");
+
+      // 2. Submit review
       await addReview({
         userId: user.id,
         userName: user.name,
@@ -52,6 +90,7 @@ export default function AddReviewScreen() {
         bookingId,
         rating,
         comment,
+        photos: uploadedUrls,
       });
 
       Alert.alert("Success", "Thank you for your feedback!", [
@@ -61,6 +100,7 @@ export default function AddReviewScreen() {
       Alert.alert("Error", error.message || "Failed to submit review");
     } finally {
       setLoading(false);
+      setUploadProgress("");
     }
   };
 
@@ -134,8 +174,37 @@ export default function AddReviewScreen() {
             />
           </View>
 
+          {/* Photo Upload Section */}
+          <View style={styles.photoSection}>
+            <View style={styles.photoHeader}>
+              <Text style={styles.sectionLabel}>Add Photos (up to 3)</Text>
+              <Text style={styles.photoCount}>{photos.length}/3</Text>
+            </View>
+            
+            <View style={styles.photosContainer}>
+              {photos.map((uri, index) => (
+                <View key={index} style={styles.photoPreviewWrapper}>
+                  <Image source={{ uri }} style={styles.photoPreview} />
+                  <TouchableOpacity
+                    style={styles.removePhotoButton}
+                    onPress={() => removePhoto(index)}
+                  >
+                    <Ionicons name="close-circle" size={24} color={APP_COLORS.error} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+              
+              {photos.length < 3 && (
+                <TouchableOpacity style={styles.addPhotoButton} onPress={pickImage}>
+                  <Ionicons name="camera-outline" size={32} color={APP_COLORS.textSecondary} />
+                  <Text style={styles.addPhotoText}>Add Photo</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
           <Button
-            title={loading ? "Submitting..." : "Submit Review"}
+            title={loading ? (uploadProgress || "Submitting...") : "Submit Review"}
             onPress={handleSubmit}
             variant="primary"
             size="large"
@@ -231,5 +300,58 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     marginTop: APP_SPACING.md,
+  },
+  photoSection: {
+    width: "100%",
+    marginBottom: APP_SPACING.xxl,
+  },
+  photoHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  photoCount: {
+    fontSize: APP_FONT_SIZES.xs,
+    color: APP_COLORS.textTertiary,
+  },
+  photosContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginTop: APP_SPACING.sm,
+  },
+  photoPreviewWrapper: {
+    position: "relative",
+    marginRight: APP_SPACING.sm,
+    marginBottom: APP_SPACING.sm,
+  },
+  photoPreview: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    backgroundColor: APP_COLORS.card,
+  },
+  removePhotoButton: {
+    position: "absolute",
+    top: -8,
+    right: -8,
+    backgroundColor: APP_COLORS.background,
+    borderRadius: 12,
+  },
+  addPhotoButton: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: APP_COLORS.border,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: APP_COLORS.card,
+    marginBottom: APP_SPACING.sm,
+  },
+  addPhotoText: {
+    fontSize: 10,
+    color: APP_COLORS.textSecondary,
+    marginTop: 4,
   },
 });

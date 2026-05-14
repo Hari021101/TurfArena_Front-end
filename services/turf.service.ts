@@ -28,7 +28,7 @@ export const getAllTurfs = async (city?: string): Promise<Turf[]> => {
  * @param id - Turf ID
  * @returns Promise<Turf | null>
  */
-export const getTurbById = async (id: string): Promise<Turf | null> => {
+export const getTurfById = async (id: string): Promise<Turf | null> => {
   try {
     const t = await apiFetch(`/turfs/${id}`);
     return {
@@ -42,6 +42,10 @@ export const getTurbById = async (id: string): Promise<Turf | null> => {
     return THANJAVUR_DUMMY_TURFS.find((t) => t.id === id) ?? null;
   }
 };
+
+// Alias for backward compatibility (original had a typo)
+export const getTurbById = getTurfById;
+
 
 /**
  * Get turfs by owner ID

@@ -1,8 +1,10 @@
 // Authentication Context for global state management
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   logout as authLogout,
   getUserProfile,
   updateUserProfile,
+  isAuthenticated as checkAuthStatus,
 } from "@/services/auth.service";
 import {
   addNotificationListeners,
@@ -17,15 +19,21 @@ import {
   useState,
 } from "react";
 
+const FAVOURITES_KEY = "favourite_turfs";
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   setUser: (user: User | null) => void;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
-  isFirestoreBlocked: boolean; // Kept for compatibility if used in components
+  isFirestoreBlocked: boolean;
   bypassLogin: (role: "player" | "owner") => Promise<void>;
   updateProfile: (updates: Partial<User>) => Promise<void>;
+  // ❤️ Favourites
+  toggleFavourite: (turfId: string) => Promise<void>;
+  isFavourite: (turfId: string) => boolean;
+  favourites: string[];
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,15 +46,35 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFirestoreBlocked, setIsFirestoreBlocked] = useState(false);
+  const [favourites, setFavourites] = useState<string[]>([]);
+
+  // Load favourites from AsyncStorage on mount
+  useEffect(() => {
+    const loadFavourites = async () => {
+      try {
+        const stored = await AsyncStorage.getItem(FAVOURITES_KEY);
+        if (stored) setFavourites(JSON.parse(stored));
+      } catch (_) {}
+    };
+    loadFavourites();
+  }, []);
 
   useEffect(() => {
-    // Check local token and fetch user profile from API
     const initAuth = async () => {
       try {
-        const userProfile = await getUserProfile();
-        setUser(userProfile);
+        const hasToken = await checkAuthStatus();
+        if (hasToken) {
+          const profile = await getUserProfile();
+          if (profile) {
+            setUser(profile);
+          } else {
+            setUser(null);
+          }
+        } else {
+          setUser(null);
+        }
       } catch (error) {
-        console.error("Error fetching user profile:", error);
+        console.error("Auth init error:", error);
         setUser(null);
       } finally {
         setLoading(false);
@@ -87,6 +115,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  // ❤️ Toggle a turf as favourite / unfavourite
+  const toggleFavourite = async (turfId: string) => {
+    const updated = favourites.includes(turfId)
+      ? favourites.filter((id) => id !== turfId)
+      : [...favourites, turfId];
+    setFavourites(updated);
+    await AsyncStorage.setItem(FAVOURITES_KEY, JSON.stringify(updated));
+  };
+
+  const isFavourite = (turfId: string) => favourites.includes(turfId);
+
   const value: AuthContextType = {
     user,
     loading,
@@ -94,9 +133,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     logout,
     isAuthenticated: !!user,
     isFirestoreBlocked,
+    favourites,
+    toggleFavourite,
+    isFavourite,
     bypassLogin: async (role: "player" | "owner") => {
       setLoading(true);
-      // Create dummy user
       const dummyUser: User = {
         id: role === "owner" ? "owner-1" : `dev-${role}-123`,
         name: `Dev ${role === "owner" ? "Admin" : "Player"}`,
@@ -112,7 +153,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     updateProfile: async (updates: Partial<User>) => {
       if (!user) return;
       await updateUserProfile(user.id, updates);
-      // Update local state
       const updatedUser = { ...user, ...updates, updatedAt: new Date() };
       setUser(updatedUser as User);
     },

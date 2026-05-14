@@ -5,6 +5,7 @@ import {
     APP_FONT_SIZES,
     APP_SPACING,
 } from "@/constants/appTheme";
+import { scheduleBookingReminders } from "@/services/notification.service";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect } from "react";
@@ -12,7 +13,13 @@ import { BackHandler, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function BookingSuccessScreen() {
-  const { bookingId } = useLocalSearchParams<{ bookingId: string }>();
+  const { bookingId, turfName, bookingDate, slotTime } =
+    useLocalSearchParams<{
+      bookingId: string;
+      turfName: string;
+      bookingDate: string;
+      slotTime: string;
+    }>();
 
   useEffect(() => {
     // Prevent back button
@@ -20,8 +27,15 @@ export default function BookingSuccessScreen() {
       "hardwareBackPress",
       () => true,
     );
+
+    // 🔔 Schedule booking reminders
+    if (bookingId && turfName && bookingDate && slotTime) {
+      scheduleBookingReminders(bookingId, turfName, bookingDate, slotTime);
+    }
+
     return () => backHandler.remove();
   }, []);
+
 
   return (
     <SafeAreaView style={styles.container}>
